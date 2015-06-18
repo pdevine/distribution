@@ -6,6 +6,7 @@ import "github.com/gorilla/mux"
 // registered. These symbols can be used to look up a route based on the name.
 const (
 	RouteNameBase            = "base"
+	RouteNameCatalog         = "catalog"
 	RouteNameManifest        = "manifest"
 	RouteNameTags            = "tags"
 	RouteNameBlob            = "blob"
@@ -15,6 +16,7 @@ const (
 
 var allEndpoints = []string{
 	RouteNameManifest,
+	RouteNameCatalog,
 	RouteNameTags,
 	RouteNameBlob,
 	RouteNameBlobUpload,

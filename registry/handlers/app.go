@@ -69,6 +69,7 @@ func NewApp(ctx context.Context, configuration configuration.Configuration) *App
 		return http.HandlerFunc(apiBase)
 	})
 	app.register(v2.RouteNameManifest, imageManifestDispatcher)
+	app.register(v2.RouteNameCatalog, catalogDispatcher)
 	app.register(v2.RouteNameTags, tagsDispatcher)
 	app.register(v2.RouteNameBlob, blobDispatcher)
 	app.register(v2.RouteNameBlobUpload, blobUploadDispatcher)
@@ -543,7 +544,8 @@ func (app *App) eventBridge(ctx *Context, r *http.Request) notifications.Listene
 // nameRequired returns true if the route requires a name.
 func (app *App) nameRequired(r *http.Request) bool {
 	route := mux.CurrentRoute(r)
-	return route == nil || route.GetName() != v2.RouteNameBase
+	routeName := route.GetName()
+	return route == nil || (routeName != v2.RouteNameBase && routeName != v2.RouteNameCatalog)
 }
 
 // apiBase implements a simple yes-man for doing overall checks against the

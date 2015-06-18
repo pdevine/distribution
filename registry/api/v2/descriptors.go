@@ -361,6 +361,48 @@ var routeDescriptors = []RouteDescriptor{
 		},
 	},
 	{
+		Name:        RouteNameCatalog,
+		Path:        "/v2/_catalog",
+		Entity:      "Catalog",
+		Description: "Retrieve a catalog of container images",
+		Methods: []MethodDescriptor{
+			{
+				Method:      "GET",
+				Description: "Fetch a list of container images.",
+				Requests: []RequestDescriptor{
+					{
+						Headers: []ParameterDescriptor{
+							hostHeader,
+							authHeader,
+						},
+						Successes: []ResponseDescriptor{
+							{
+								Description: "A list of images.",
+								StatusCode:  http.StatusOK,
+							},
+						},
+						Failures: []ResponseDescriptor{
+							{
+								Description: "The client is not authorized to access the registry.",
+								StatusCode:  http.StatusUnauthorized,
+								Headers: []ParameterDescriptor{
+									authChallengeHeader,
+								},
+								Body: BodyDescriptor{
+									ContentType: "application/json; charset=utf-8",
+									Format:      errorsBody,
+								},
+								ErrorCodes: []errcode.ErrorCode{
+									ErrorCodeUnauthorized,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+	{
 		Name:        RouteNameTags,
 		Path:        "/v2/{name:" + RepositoryNameRegexp.String() + "}/tags/list",
 		Entity:      "Tags",

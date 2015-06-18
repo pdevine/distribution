@@ -60,6 +60,24 @@ func TestCheckAPI(t *testing.T) {
 	}
 }
 
+func TestCatalogAPI(t *testing.T) {
+	env := newTestEnv(t)
+
+	catalogURL, err := env.builder.BuildCatalogURL("100", "")
+	if err != nil {
+		t.Fatalf("unexpected error building catalog url: %v", err)
+	}
+
+	resp, err := http.Get(catalogURL)
+	if err != nil {
+		t.Fatalf("unexpected error issuing request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	checkResponse(t, "issuing api base check", resp, http.StatusOK)
+
+}
+
 func TestURLPrefix(t *testing.T) {
 	config := configuration.Configuration{
 		Storage: configuration.Storage{
