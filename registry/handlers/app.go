@@ -69,6 +69,7 @@ func NewApp(ctx context.Context, configuration configuration.Configuration) *App
 		return http.HandlerFunc(apiBase)
 	})
 	app.register(v2.RouteNameManifest, imageManifestDispatcher)
+	app.register(v2.RouteNameCatalog, catalogDispatcher)
 	app.register(v2.RouteNameTags, tagsDispatcher)
 	app.register(v2.RouteNameBlob, blobDispatcher)
 	app.register(v2.RouteNameBlobUpload, blobUploadDispatcher)
@@ -396,6 +397,9 @@ func (app *App) dispatcher(dispatch dispatchFunc) http.Handler {
 				serveJSON(w, context.Errors)
 				return
 			}
+		} else {
+			catalog := app.registry.Catalog(context, app.driver)
+			context.Catalog = catalog
 		}
 
 		dispatch(context, r).ServeHTTP(w, r)
@@ -466,6 +470,7 @@ func (app *App) authorized(w http.ResponseWriter, r *http.Request, context *Cont
 	repo := getName(context)
 
 	if app.accessController == nil {
+		ctxu.GetLogger(context).Debug("access controller not set")
 		return nil // access controller is not enabled.
 	}
 
@@ -489,6 +494,7 @@ func (app *App) authorized(w http.ResponseWriter, r *http.Request, context *Cont
 			serveJSON(w, errs)
 			return fmt.Errorf("forbidden: no repository name")
 		}
+		accessRecords = appendCatalogAccessRecord(accessRecords, r)
 	}
 
 	ctx, err := app.accessController.Authorized(context.Context, accessRecords...)
@@ -534,7 +540,8 @@ func (app *App) eventBridge(ctx *Context, r *http.Request) notifications.Listene
 // nameRequired returns true if the route requires a name.
 func (app *App) nameRequired(r *http.Request) bool {
 	route := mux.CurrentRoute(r)
-	return route == nil || route.GetName() != v2.RouteNameBase
+	routeName := route.GetName()
+	return route == nil || (routeName != v2.RouteNameBase && routeName != v2.RouteNameCatalog)
 }
 
 // apiBase implements a simple yes-man for doing overall checks against the
@@ -582,6 +589,26 @@ func appendAccessRecords(records []auth.Access, method string, repo string) []au
 			})
 	}
 	return records
+}
+
+// Add the access record for the catalog if it's our current route
+func appendCatalogAccessRecord(accessRecords []auth.Access, r *http.Request) []auth.Access {
+	route := mux.CurrentRoute(r)
+	routeName := route.GetName()
+
+	if routeName == v2.RouteNameCatalog {
+		resource := auth.Resource{
+			Type: "registry",
+			Name: "catalog",
+		}
+
+		accessRecords = append(accessRecords,
+			auth.Access{
+				Resource: resource,
+				Action:   "*",
+			})
+	}
+	return accessRecords
 }
 
 // applyRegistryMiddleware wraps a registry instance with the configured middlewares
